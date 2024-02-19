@@ -60,7 +60,7 @@ public:
   }
   void brake() {
     std::cout << "motor:" << name_ << " brake" << std::endl;
-    // AT8236驱动方式：IN1=1 IN2=1 --> 反转
+    // AT8236驱动方式：IN1=1 IN2=1 --> 刹车
     lgGpioWrite(ctl_, p1_, 1);
     lgGpioWrite(ctl_, p2_, 1);
   }
