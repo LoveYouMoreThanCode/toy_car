@@ -47,19 +47,22 @@ public:
     return 0;
   }
   void move_forward() {
-    std::cout << "motor:" << name_ << " move forward" << std::endl;
+    std::cout << "motor:" << name_ << " move forward,"
+              << " ctl:" << ctl_ << " p1:" << p1_ << " p2:" << p2_ << std::endl;
     // AT8236驱动方式：IN1=1 IN2=0 --> 正转
     lgGpioWrite(ctl_, p1_, 1);
     lgGpioWrite(ctl_, p2_, 0);
   }
   void move_backward() {
-    std::cout << "motor:" << name_ << " move backward" << std::endl;
+    std::cout << "motor:" << name_ << " move backward,"
+              << " ctl:" << ctl_ << " p1:" << p1_ << " p2:" << p2_ << std::endl;
     // AT8236驱动方式：IN1=0 IN2=1 --> 反转
     lgGpioWrite(ctl_, p1_, 0);
     lgGpioWrite(ctl_, p2_, 1);
   }
   void brake() {
-    std::cout << "motor:" << name_ << " brake" << std::endl;
+    std::cout << "motor:" << name_ << " brake,"
+              << " ctl:" << ctl_ << " p1:" << p1_ << " p2:" << p2_ << std::endl;
     // AT8236驱动方式：IN1=1 IN2=1 --> 刹车
     lgGpioWrite(ctl_, p1_, 1);
     lgGpioWrite(ctl_, p2_, 1);
@@ -139,6 +142,7 @@ int main() {
     std::cout<<"failed to init my car, rc:"<<rc<<std::endl;
     return rc;
   }
+  std::cout << "............开始自检............" << std::endl;
   //前进200ms
   std::cout<<"前进200ms"<<std::endl;
   my_car.move_forward();
@@ -160,31 +164,36 @@ int main() {
   my_car.turn_left();
   lguSleep(0.1);
   //普通右转100ms
-  std::cout<<"普通右转100ms"<<std::endl;
+  std::cout << "普通右转100ms" << std::endl;
   my_car.turn_right();
   lguSleep(0.1);
+  std::cout << "............自检结束............" << std::endl << std::endl;
 
   while (true) {
     std::string cmd;
+    std::cout << std::endl << std::endl;
+    std::cout
+        << "...........等待输入指令left(l)/right(r)/forward(f)/backward(b)....."
+        << std::endl;
     std::cin >> cmd;
-    if (cmd == "left") {
-      std::cout << "普通左转100ms............" << std::endl;
+    if (cmd == "left" || cmd == "l") {
+      std::cout << "............普通左转100ms............" << std::endl;
       my_car.turn_left();
       lguSleep(0.1);
-    } else if (cmd == "right") {
-      std::cout << "普通右转100ms............" << std::endl;
+    } else if (cmd == "right" || cmd == "r") {
+      std::cout << "............普通右转100ms............" << std::endl;
       my_car.turn_right();
       lguSleep(0.1);
-    } else if (cmd == "forward") {
-      std::cout << "前进200ms................" << std::endl;
+    } else if (cmd == "forward" || cmd == "f") {
+      std::cout << "............前进200ms................" << std::endl;
       my_car.move_forward();
       lguSleep(0.2);
-    } else if (cmd == "backward") {
-      std::cout << "后退200ms................" << std::endl;
+    } else if (cmd == "backward" || cmd == "b") {
+      std::cout << "............后退200ms................" << std::endl;
       my_car.move_backward();
       lguSleep(0.2);
     } else {
-      std::cout << "崩溃200ms..............." << std::endl;
+      std::cout << "............崩溃200ms..............." << std::endl;
       std::cout << "原地左转100ms" << std::endl;
       my_car.turn_left(true);
       lguSleep(0.1);
