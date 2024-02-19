@@ -164,6 +164,35 @@ int main() {
   my_car.turn_right();
   lguSleep(0.1);
 
+  while (true) {
+    std::string cmd;
+    std::cin >> cmd;
+    if (cmd == "left") {
+      std::cout << "普通左转100ms............" << std::endl;
+      my_car.turn_left();
+      lguSleep(0.1);
+    } else if (cmd == "right") {
+      std::cout << "普通右转100ms............" << std::endl;
+      my_car.turn_right();
+      lguSleep(0.1);
+    } else if (cmd == "forward") {
+      std::cout << "前进200ms................" << std::endl;
+      my_car.move_forward();
+      lguSleep(0.2);
+    } else if (cmd == "backward") {
+      std::cout << "后退200ms................" << std::endl;
+      my_car.move_backward();
+      lguSleep(0.2);
+    } else {
+      std::cout << "崩溃200ms..............." << std::endl;
+      std::cout << "原地左转100ms" << std::endl;
+      my_car.turn_left(true);
+      lguSleep(0.1);
+      std::cout << "原地右转100ms" << std::endl;
+      my_car.turn_right(true);
+      lguSleep(0.1);
+    }
+  }
   //结束
   return 0;
 }
