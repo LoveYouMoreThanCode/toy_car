@@ -1,6 +1,5 @@
 #include <iostream>
 #include <unistd.h>
-
 #ifdef USE_REAL_GPIO
 extern "C" {
 #include "lgpio.h"
@@ -81,7 +80,7 @@ public:
   ~Car(){};
   int init() {
     ctl_handle_ = lgGpiochipOpen(4);
-    assert(ctl_handle_ != 0);
+    assert(ctl_handle_ >= 0);
     uint32_t left_motor_p1 = 17;
     uint32_t left_motor_p2 = 27;
     Motor left(ctl_handle_, "left", left_motor_p1, left_motor_p2);
@@ -142,38 +141,11 @@ int main() {
     std::cout<<"failed to init my car, rc:"<<rc<<std::endl;
     return rc;
   }
-  std::cout << "............开始自检............" << std::endl;
-  //前进200ms
-  std::cout<<"前进200ms"<<std::endl;
-  my_car.move_forward();
-  lguSleep(0.2);
-  //后退200ms
-  std::cout<<"后退200ms"<<std::endl;
-  my_car.move_backward();
-  lguSleep(0.2);
-  //spin方式左转100ms
-  std::cout<<"原地左转100ms"<<std::endl;
-  my_car.turn_left(true);
-  lguSleep(0.1);
-  //spin方式右转100ms
-  std::cout<<"原地右转100ms"<<std::endl;
-  my_car.turn_right(true);
-  lguSleep(0.1);
-  //普通左转100ms 
-  std::cout<<"普通左转100ms"<<std::endl;
-  my_car.turn_left();
-  lguSleep(0.1);
-  //普通右转100ms
-  std::cout << "普通右转100ms" << std::endl;
-  my_car.turn_right();
-  lguSleep(0.1);
-  std::cout << "............自检结束............" << std::endl << std::endl;
-
   while (true) {
     std::string cmd;
     std::cout << std::endl << std::endl;
     std::cout
-        << "...........等待输入指令left(l)/right(r)/forward(f)/backward(b)....."
+        << "...........等待输入指令left(l)/right(r)/forward(f)/backward(b)/brake(*)....."
         << std::endl;
     std::cin >> cmd;
     if (cmd == "left" || cmd == "l") {
@@ -193,13 +165,8 @@ int main() {
       my_car.move_backward();
       lguSleep(0.2);
     } else {
-      std::cout << "............崩溃200ms..............." << std::endl;
-      std::cout << "原地左转100ms" << std::endl;
-      my_car.turn_left(true);
-      lguSleep(0.1);
-      std::cout << "原地右转100ms" << std::endl;
-      my_car.turn_right(true);
-      lguSleep(0.1);
+      std::cout << "............刹车..............." << std::endl;
+      my_car.brake();
     }
   }
   //结束
