@@ -12,6 +12,8 @@
 //
 // Copyright Drew Noakes 2013-2016
 
+#pragma once
+
 #include <unistd.h>
 #include <string>
 

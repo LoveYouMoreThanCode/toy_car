@@ -19,7 +19,7 @@ void Motor::move_forward(uint32_t speed) {
   // lgGpioWrite(ctl_, p1_, 1);
   // lgGpioWrite(ctl_, p2_, 0);
   lgTxPwm(ctl_, p1_, MOTOR_DRIVE_PWM_FREQ_HZ, revise_speed(speed), 0, 0);
-  lgTxPwm(ctl_, p2_, 0, 0, 0);
+  lgTxPwm(ctl_, p2_, 0, 0, 0, 0);
 }
 
 void Motor::move_backward(uint32_t speed) {
@@ -29,7 +29,7 @@ void Motor::move_backward(uint32_t speed) {
   // AT8236驱动方式：IN1=0 IN2=1 --> 反转
   // lgGpioWrite(ctl_, p1_, 0);
   // lgGpioWrite(ctl_, p2_, 1);
-  lgTxPwm(ctl_, p1_, 0, 0, 0);
+  lgTxPwm(ctl_, p1_, 0, 0, 0, 0);
   lgTxPwm(ctl_, p2_, MOTOR_DRIVE_PWM_FREQ_HZ, revise_speed(speed), 0, 0);
 }
 
@@ -39,12 +39,12 @@ void Motor::brake() {
   // AT8236驱动方式：IN1=1 IN2=1 --> 刹车
   // lgGpioWrite(ctl_, p1_, 0);
   // lgGpioWrite(ctl_, p2_, 0);
-  lgTxPwm(ctl_, p1_, 0, 0, 0);
-  lgTxPwm(ctl_, p2_, 0, 0, 0);
+  lgTxPwm(ctl_, p1_, 0, 0, 0, 0);
+  lgTxPwm(ctl_, p2_, 0, 0, 0, 0);
 }
 
 uint32_t Motor::revise_speed(uint32_t speed) {
-  return std::min(100, std::max(20, speed));
+  return std::min(100U, std::max(20U, speed));
 }
 
 int Car::init() {

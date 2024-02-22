@@ -80,8 +80,8 @@ private:
   int x_{0};
   int y_{0};
   bool sonar_on_{false};
-  std::string path_;
   Joystick js_;
+  std::string path_;
 };
 
 class TerminalCommander : public Commander {
@@ -119,7 +119,7 @@ private:
     if (v1 == 0) {
       return "left";
     }
-    if (v2 == 0 & v3 == 0) {
+    if (v2 == 0 && v3 == 0) {
       return "forward";
     }
     if (v2 == 0) {
@@ -128,7 +128,7 @@ private:
     if (v3 == 0) {
       return "right";
     }
-    return "backward"
+    return "backward";
   }
   void set_all_port_input() {
     lgGpioClaimInput(io_handle_, LG_SET_PULL_UP, p1_);
@@ -147,7 +147,7 @@ private:
 
 class SonarCommander : public Commander {
 public:
-  SonarCommander(uint32_t p1, SonarCommander p2) : sonar_(p1, p2) {
+  SonarCommander(uint32_t p1, uint32_t p2) : sonar_(p1, p2) {
     for (uint32_t i = 1; i <= 32; i++) {
       std::string dir = i % 2 ? "right" : "left";
       for (uint32_t j = 0; j < i; j++) {

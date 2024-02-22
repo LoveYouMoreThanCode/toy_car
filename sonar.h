@@ -6,7 +6,7 @@ public:
   double get_distance();
 private:
   void ping();
-  void pong();
+  uint64_t pong();
 private:
   int32_t io_handle_;
   uint32_t trigger_;

@@ -1,4 +1,4 @@
-
+#pragma once
 extern "C" {
 #include "lgpio.h"
 }
