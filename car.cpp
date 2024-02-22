@@ -20,6 +20,7 @@ void Motor::move_forward(uint32_t speed) {
   // lgGpioWrite(ctl_, p2_, 0);
   lgTxPwm(ctl_, p1_, MOTOR_DRIVE_PWM_FREQ_HZ, revise_speed(speed), 0, 0);
   lgTxPwm(ctl_, p2_, 0, 0, 0, 0);
+  lgGpioWrite(ctl_, p2_, 0);
 }
 
 void Motor::move_backward(uint32_t speed) {
@@ -30,6 +31,7 @@ void Motor::move_backward(uint32_t speed) {
   // lgGpioWrite(ctl_, p1_, 0);
   // lgGpioWrite(ctl_, p2_, 1);
   lgTxPwm(ctl_, p1_, 0, 0, 0, 0);
+  lgGpioWrite(ctl_, p1_, 0);
   lgTxPwm(ctl_, p2_, MOTOR_DRIVE_PWM_FREQ_HZ, revise_speed(speed), 0, 0);
 }
 

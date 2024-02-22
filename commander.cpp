@@ -150,7 +150,7 @@ public:
   SonarCommander(uint32_t p1, uint32_t p2) : sonar_(p1, p2) {
     for (uint32_t i = 1; i <= 32; i++) {
       std::string dir = i % 2 ? "right" : "left";
-      for (uint32_t j = 0; j < i; j++) {
+      for (uint32_t j = 0; j < i*3; j++) {
         lookup_algo_.push_back(dir);
       }
     }
@@ -165,6 +165,7 @@ public:
       if (state_ != LOOKUP) {
         state_ = LOOKUP;
         lookup_cursor_ = 0;
+        return "brake";
       }
     }
     if (state_ == WALK) {
@@ -180,7 +181,7 @@ private:
   };
   Sonar sonar_;
   STATE state_{WALK};
-  double safe_distance_{0.5};
+  double safe_distance_{0.4};
   uint32_t lookup_cursor_{0};
   std::vector<std::string> lookup_algo_;
 };
