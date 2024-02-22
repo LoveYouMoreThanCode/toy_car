@@ -22,10 +22,10 @@ int main() {
   }
   std::unique_ptr<Commander, void (*)(Commander *)> js_commander(
       make_commander("joystick"), destroy_commander);
-  my_car.set_engine(90, 50, 30);
   std::unique_ptr<Commander, void (*)(Commander *)> sn_commander(
       make_commander("sonar"), destroy_commander);
-  my_car.set_engine(30, 15, 5);
+  std::unique_ptr<Commander, void (*)(Commander *)> tm_commander(
+      make_commander("terminal"), destroy_commander);
 
   while (true) {
     // 保持一定的控制周期
@@ -39,6 +39,12 @@ int main() {
     std::string cmd = js_commander->scan_cmd();
     if (cmd == "auto_sonar") {
       cmd = sn_commander->scan_cmd();
+      my_car.set_engine(30, 15, 5);
+    }else if (cmd == "fallback_terminal") {
+      cmd = tm_commander->scan_cmd();
+      my_car.set_engine(40, 20, 10);
+    }else {
+      my_car.set_engine(90, 50, 30);
     }
 
     if (cmd == "left" || cmd == "l") {

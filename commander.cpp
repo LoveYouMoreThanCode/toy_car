@@ -25,6 +25,9 @@ public:
   ~JsCommander() {}
   std::string scan_cmd() override {
     reload_if_need();
+    if (!js_.isFound()) {
+      return "fallback_terminal";
+    }
     JoystickEvent event;
     while (js_.sample(&event)) {
       if (event.isButton()) {
