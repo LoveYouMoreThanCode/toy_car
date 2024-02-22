@@ -11,5 +11,5 @@ private:
   int32_t io_handle_;
   uint32_t trigger_;
   uint32_t response_;
-  uint64_t timeout_{20000};
+  uint64_t timeout_{20000000};
 };

@@ -158,6 +158,7 @@ public:
   ~SonarCommander() {}
   std::string scan_cmd() override {
     double cur_distance = sonar_.get_distance();
+    std::cout<<"distance:"<<cur_distance<<std::endl;
     if (cur_distance > safe_distance_) {
       state_ = WALK;
     } else {

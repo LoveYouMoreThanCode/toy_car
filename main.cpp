@@ -36,7 +36,8 @@ int main() {
     std::cout << "...........等待输入指令left(l)/right(r)/forward(f)/"
                  "backward(b)/brake(*)....."
               << std::endl;
-    std::string cmd = js_commander->scan_cmd();
+    //std::string cmd = js_commander->scan_cmd();
+    std::string cmd = "auto_sonar";
     if (cmd == "auto_sonar") {
       cmd = sn_commander->scan_cmd();
       my_car.set_engine(30, 30, 30);
@@ -48,6 +49,7 @@ int main() {
     }else {
       my_car.set_engine(90, 40, 40);
     }
+    continue;
 
     if (cmd == "left" || cmd == "l") {
       std::cout << "............普通左转100ms............" << std::endl;
