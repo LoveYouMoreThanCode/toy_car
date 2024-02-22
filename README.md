@@ -19,11 +19,11 @@ bash build-test.sh
 ```
 
 ## run
-1. run in front
+1. run in front end
    ```
    ./test
    ```
-3. run in backend
+3. run in back end
    ```
    nohup ./test 2>&1 &
    ```
