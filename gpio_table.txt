@@ -1,7 +1,7 @@
                                   +-----+
                             3.3v  |1  2 |  5v
-                [display]  gpio2  |3  4 |  5v
-                [display]  gpio3  |5  6 |  ground
+                [display]  gpio2  |3  4 |  5v     [Sonar]
+                [display]  gpio3  |5  6 |  ground [Sonar]
                            gpio4  |7  8 |  gpio14 [Sonar]
                           ground  |9  10|  gpio15 [Sonar]
                   [motor] gpio17  |11 12|  gpio18
