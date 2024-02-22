@@ -13,15 +13,17 @@
 // Copyright Drew Noakes 2013-2016
 #include "commander.h"
 #include "joystick.hh"
+#include "sonar.h"
 #include <cassert>
+#include <vector>
 extern "C" {
 #include "lgpio.h"
 }
-class JsCommander: public Commander {
+class JsCommander : public Commander {
 public:
   JsCommander(std::string path) : js_(path), path_(path) {}
   ~JsCommander() {}
-  std::string scan_cmd() override{
+  std::string scan_cmd() override {
     reload_if_need();
     JoystickEvent event;
     while (js_.sample(&event)) {
@@ -34,13 +36,13 @@ public:
         y_ = event.value;
       }
     }
-    printf("x=%d y=%d\n",x_,y_);
+    printf("x=%d y=%d\n", x_, y_);
     return make_cmd();
   }
 
 private:
   std::string make_cmd() {
-    if (x_ == 0 && y_== 0) {
+    if (x_ == 0 && y_ == 0) {
       return "brake";
     }
     if (x_ < 0) {
@@ -55,11 +57,11 @@ private:
     }
   }
   void reload_if_need() {
-    if(js_.isFound()) {
+    if (js_.isFound()) {
       return;
     }
     js_.~Joystick();
-    new (&js_)Joystick(path_);
+    new (&js_) Joystick(path_);
   }
 
 private:
@@ -115,11 +117,11 @@ private:
     }
     return "backward"
   }
- void set_all_port_input() {
-   lgGpioClaimInput(io_handle_, LG_SET_PULL_UP, p1_);
-   lgGpioClaimInput(io_handle_, LG_SET_PULL_UP, p2_);
-   lgGpioClaimInput(io_handle_, LG_SET_PULL_UP, p3_);
-   lgGpioClaimInput(io_handle_, LG_SET_PULL_UP, p4_);
+  void set_all_port_input() {
+    lgGpioClaimInput(io_handle_, LG_SET_PULL_UP, p1_);
+    lgGpioClaimInput(io_handle_, LG_SET_PULL_UP, p2_);
+    lgGpioClaimInput(io_handle_, LG_SET_PULL_UP, p3_);
+    lgGpioClaimInput(io_handle_, LG_SET_PULL_UP, p4_);
   }
 
 private:
@@ -130,16 +132,55 @@ private:
   uint32_t p4_;
 };
 
+class SonarCommander : public Commander {
+public:
+  SonarCommander(uint32_t p1, SonarCommander p2) : sonar_(p1, p2) {
+    for (uint32_t i = 1; i <= 32; i++) {
+      std::string dir = i % 2 ? "right" : "left";
+      for (uint32_t j = 0; j < i; j++) {
+        lookup_algo_.push_back(dir);
+      }
+    }
+  }
+  ~SonarCommander() {}
+  std::string scan_cmd() override {
+    double cur_distance = sonar_.get_distance();
+    if (cur_distance > safe_distance_) {
+      state_ = WALK;
+    } else {
+      if (state_ != LOOKUP) {
+        state_ = LOOKUP;
+        lookup_cursor_ = 0;
+      }
+    }
+    if (state_ == WALK) {
+      return "forward";
+    }
+    return lookup_algo_[lookup_cursor_++ % lookup_algo_.size()];
+  }
+
+private:
+  enum STATE {
+    WALK = 1,
+    LOOKUP = 2,
+  };
+  Sonar sonar_;
+  STATE state_{WALK};
+  double safe_distance_{0.5};
+  uint32_t lookup_cursor_{0};
+  std::vector<std::string> lookup_algo_;
+};
+
 Commander *make_commander(std::string type) {
   if (type == "joystick") {
     return new JsCommander("/dev/input/js0");
-  }else if (type == "terminal") {
+  } else if (type == "terminal") {
     return new TerminalCommander();
-  }else if (type == "infrared") {
+  } else if (type == "infrared") {
     return new InfraredCommander(25, 8, 7, 1);
+  } else if (type == "sonar") {
+    return new SonarCommander(14, 15);
   }
   return nullptr;
 }
-void destroy_commander(Commander *cmd) {
-  delete cmd;
-}
+void destroy_commander(Commander *cmd) { delete cmd; }

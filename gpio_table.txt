@@ -1,0 +1,22 @@
+                                  +-----+
+                            3.3v  |1  2 |  5v
+                [display]  gpio2  |3  4 |  5v
+                [display]  gpio3  |5  6 |  ground
+                           gpio4  |7  8 |  gpio14 [Sonar]
+                          ground  |9  10|  gpio15 [Sonar]
+                  [motor] gpio17  |11 12|  gpio18
+                  [motor] gpio27  |13 14|  ground
+                          gpio22  |15 16|  gpio23 [motor]
+                            3.3v  |17 18|  gpio24 [motor]
+                          gpio10  |19 20|  ground
+                           gpio9  |21 22|  gpio25 [InfraRed]
+                          gpio11  |23 24|  gpio8  [InfraRed]
+                          ground  |25 26|  gpio7  [InfraRed]
+                           gpio0  |27 28|  gpio1  [InfraRed]
+                  [motor]  gpio5  |29 30|  ground
+                  [motor]  gpio6  |31 32|  gpio12
+                          gpio13  |33 34|  ground
+                          gpio19  |35 36|  gpio16
+                          gpio26  |37 38|  gpio20 [Motor]
+                          ground  |39 40|  gpio21 [Motor]
+                                  +-----+
