@@ -9,7 +9,7 @@ extern "C" {
 #include <memory>
 #include <unordered_map>
 
-#define MOTOR_DRIVE_PWM_FREQ_HZ 1000 /*Hz*/
+#define MOTOR_DRIVE_PWM_FREQ_HZ 100 /*Hz*/
 class Motor {
 public:
   Motor(int controller, const std::string &name, uint32_t p1, uint32_t p2)
@@ -47,6 +47,6 @@ private:
   int32_t ctl_handle_;
   std::unordered_map<std::string, Motor> motors_;
   uint32_t forward_speed_{90};
-  uint32_t backward_speed_{50};
-  uint32_t turn_speed_{30};
+  uint32_t backward_speed_{40};
+  uint32_t turn_speed_{40};
 };

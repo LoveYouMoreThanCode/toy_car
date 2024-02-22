@@ -31,7 +31,7 @@ public:
     JoystickEvent event;
     while (js_.sample(&event)) {
       if (event.isButton()) {
-        if (event.number == 7)  {
+        if (event.number == 2)  {
           sonar_on_ = event.value;
         }
         continue;
@@ -45,7 +45,7 @@ public:
         y_ = event.value;
       }
     }
-    printf("x=%d y=%d\n", x_, y_);
+    //printf("x=%d y=%d\n", x_, y_);
     return make_cmd();
   }
 

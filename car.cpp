@@ -37,10 +37,10 @@ void Motor::brake() {
   std::cout << "motor:" << name_ << " brake,"
             << " ctl:" << ctl_ << " p1:" << p1_ << " p2:" << p2_ << std::endl;
   // AT8236驱动方式：IN1=1 IN2=1 --> 刹车
-  // lgGpioWrite(ctl_, p1_, 0);
-  // lgGpioWrite(ctl_, p2_, 0);
   lgTxPwm(ctl_, p1_, 0, 0, 0, 0);
   lgTxPwm(ctl_, p2_, 0, 0, 0, 0);
+  lgGpioWrite(ctl_, p1_, 0);
+  lgGpioWrite(ctl_, p2_, 0);
 }
 
 uint32_t Motor::revise_speed(uint32_t speed) {

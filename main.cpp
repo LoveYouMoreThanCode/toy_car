@@ -39,12 +39,14 @@ int main() {
     std::string cmd = js_commander->scan_cmd();
     if (cmd == "auto_sonar") {
       cmd = sn_commander->scan_cmd();
-      my_car.set_engine(30, 15, 5);
+      my_car.set_engine(30, 30, 30);
+      std::cout << "using sonar cmd:" << cmd << std::endl;
     }else if (cmd == "fallback_terminal") {
       cmd = tm_commander->scan_cmd();
-      my_car.set_engine(40, 20, 10);
+      my_car.set_engine(90, 40, 40);
+      std::cout << "using fallback terminal cmd:" << cmd << std::endl;
     }else {
-      my_car.set_engine(90, 50, 30);
+      my_car.set_engine(90, 40, 40);
     }
 
     if (cmd == "left" || cmd == "l") {
