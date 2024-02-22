@@ -12,7 +12,7 @@
 //
 // Copyright Drew Noakes 2013-2016
 #include "commander.h"
-#include "joystick.hh"
+#include "joystick.h"
 #include "sonar.h"
 #include <cassert>
 #include <vector>
@@ -27,6 +27,12 @@ public:
     reload_if_need();
     JoystickEvent event;
     while (js_.sample(&event)) {
+      if (event.isButton()) {
+        if (event.number == 7)  {
+          sonar_on_ = event.value;
+        }
+        continue;
+      }
       if (!event.isAxis()) {
         continue;
       }
@@ -42,6 +48,9 @@ public:
 
 private:
   std::string make_cmd() {
+    if (sonar_on_) {
+      return "auto_sonar";
+    }
     if (x_ == 0 && y_ == 0) {
       return "brake";
     }
@@ -67,6 +76,7 @@ private:
 private:
   int x_{0};
   int y_{0};
+  bool sonar_on_{false};
   std::string path_;
   Joystick js_;
 };

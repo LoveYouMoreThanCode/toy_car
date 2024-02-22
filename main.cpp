@@ -20,15 +20,13 @@ int main() {
     std::cout << "failed to init my car, rc:" << rc << std::endl;
     return rc;
   }
-#if 0
-  std::unique_ptr<Commander, void (*)(Commander *)> commander(
+  std::unique_ptr<Commander, void (*)(Commander *)> js_commander(
       make_commander("joystick"), destroy_commander);
   my_car.set_engine(90, 50, 30);
-#else
-  std::unique_ptr<Commander, void (*)(Commander *)> commander(
-      make_commander("infrared"), destroy_commander);
+  std::unique_ptr<Commander, void (*)(Commander *)> sn_commander(
+      make_commander("sonar"), destroy_commander);
   my_car.set_engine(30, 15, 5);
-#endif
+
   while (true) {
     // 保持一定的控制周期
     lguSleep(0.1);
@@ -38,7 +36,10 @@ int main() {
     std::cout << "...........等待输入指令left(l)/right(r)/forward(f)/"
                  "backward(b)/brake(*)....."
               << std::endl;
-    std::string cmd = commander->scan_cmd();
+    std::string cmd = js_commander->scan_cmd();
+    if (cmd == "auto_sonar") {
+      cmd = sn_commander->scan_cmd();
+    }
 
     if (cmd == "left" || cmd == "l") {
       std::cout << "............普通左转100ms............" << std::endl;
