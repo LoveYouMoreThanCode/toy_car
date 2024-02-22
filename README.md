@@ -10,8 +10,18 @@ cd lg-master
 make
 sudo make install
 
-# how to build
+# how to build and run
+
+## build
 bash build-test.sh
+
+## run
+1. run in front
+   ```
+   ./test
+3. run in backend
+   ```
+   nohup ./test 2>&1 &
 
 # supported features
 1. Use AT8236 to drive 4wd toy car. Support move forward, move backward, turn left, turn right, brake
