@@ -7,6 +7,9 @@ Sonar::Sonar(uint32_t t, uint32_t r) : trigger_(t), response_(r) {
   lgGpioClaimOutput(io_handle_, 0, trigger_, 0);
   lgGpioClaimInput(io_handle_, LG_SET_PULL_DOWN, r);
 }
+Sonar::~Sonar() {
+  lgGpiochipClose(io_handle_);
+}
 
   double Sonar::get_distance() {
     ping();

@@ -2,7 +2,7 @@
 class Sonar {
 public:
   Sonar(uint32_t t, uint32_t r);
-  ~Sonar() {}
+  ~Sonar();
   double get_distance();
 private:
   void ping();

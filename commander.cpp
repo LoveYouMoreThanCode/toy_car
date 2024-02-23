@@ -14,7 +14,9 @@
 #include "commander.h"
 #include "joystick.h"
 #include "sonar.h"
+#include "steering.h"
 #include <cassert>
+#include <unordered_map>
 #include <vector>
 extern "C" {
 #include "lgpio.h"
@@ -157,33 +159,144 @@ public:
   }
   ~SonarCommander() {}
   std::string scan_cmd() override {
+    if (state_ == ADJUST) {
+      state_ = LOOKUP;
+      return "brake";
+    }
     double cur_distance = sonar_.get_distance();
-    std::cout<<"distance:"<<cur_distance<<std::endl;
-    if (cur_distance > safe_distance_) {
-      state_ = WALK;
-    } else {
-      if (state_ != LOOKUP) {
+    if (state_ == WALK) {
+      if (cur_distance < safe_distance_low_) {
         state_ = LOOKUP;
         lookup_cursor_ = 0;
         return "brake";
+      }else {
+        return "forward";
       }
+    }else {
+      if (cur_distance > safe_distance_high_) {
+        state_ = WALK;
+        return "forward";
+      }
+      state_ = ADJUST;
+      return lookup_algo_[lookup_cursor_++ % lookup_algo_.size()];
     }
-    if (state_ == WALK) {
-      return "forward";
-    }
-    return lookup_algo_[lookup_cursor_++ % lookup_algo_.size()];
   }
 
 private:
   enum STATE {
     WALK = 1,
     LOOKUP = 2,
+    ADJUST = 3,
   };
   Sonar sonar_;
-  STATE state_{WALK};
-  double safe_distance_{0.4};
+  STATE state_{LOOKUP};
+  double safe_distance_low_{0.5};
+  double safe_distance_high_{0.8};
   uint32_t lookup_cursor_{0};
   std::vector<std::string> lookup_algo_;
+};
+class SteeringSonarCommander : public Commander {
+public:
+  SteeringSonarCommander(uint32_t sonar_t, uint32_t sonar_r,
+                         uint32_t steering_c)
+      : sonar_(sonar_t, sonar_r), steering_(steering_c) {
+    walk_scan_ = {DIR_CTL_LEFT_FRONT, 
+                  DIR_CTL_FRONT, 
+                  DIR_CTL_RIGHT_FRONT,
+                  DIR_CTL_FRONT};
+    stop_scan_ = {DIR_CTL_LEFT,       
+                  DIR_CTL_LEFT_FRONT, 
+                  DIR_CTL_FRONT,
+                  DIR_CTL_RIGHT_FRONT, 
+                  DIR_CTL_RIGHT,      
+                  DIR_CTL_RIGHT_FRONT,
+                  DIR_CTL_FRONT,
+                  DIR_CTL_LEFT_FRONT};
+  };
+  ~SteeringSonarCommander() {}
+  std::string scan_cmd() override{
+    if (state_ == ADJUST) {
+      state_ = LOOKUP;
+      return "brake";
+    }
+    auto *scan_road = state_ == LOOKUP ? &stop_scan_ : &walk_scan_;
+    uint32_t scan_cnt = state_ == LOOKUP ? 5 : 3;
+    for (uint32_t i = 0; i < scan_cnt; i++) {
+      auto steering_dir = (*scan_road)[scan_cursor_%(scan_road->size())];
+      steering_.move(steering_dir);
+      //空载速度: 0.13秒/60°  --> 130000 us/60°
+      //按照规划的路径扫描。首次可以不用移动，第2和第3次扫描行走扫描需要扫描45°,stop扫描需要90°
+      double need_wait_s = 0.13 / 60 * (state_ == LOOKUP ? 90 : 45);
+      lguSleep(need_wait_s);
+      dir_distance_[steering_dir] = sonar_.get_distance();
+      scan_cursor_ ++;
+    }
+
+    if (state_ == WALK) {
+      bool keep_move = true;
+      std::vector<DIR_CTL_VALUE> care_dirs = {DIR_CTL_LEFT_FRONT, DIR_CTL_FRONT,
+                                              DIR_CTL_RIGHT_FRONT};
+      for (auto &dir : care_dirs) {
+        if (dir_distance_[dir] < safe_distance_low_) {
+          keep_move = false;
+          break;
+        }
+      }
+      if (keep_move) {
+        return "forward";
+      }
+      state_ = LOOKUP;
+      return "brake";
+    }
+    /*state == LOOKUP*/
+    bool can_go = true;
+    std::vector<DIR_CTL_VALUE> care_dirs = {DIR_CTL_LEFT_FRONT, DIR_CTL_FRONT,
+                                              DIR_CTL_RIGHT_FRONT};
+    for (auto &di :care_dirs) {
+      if (dir_distance_[dir] < safe_distance_high_) {
+        can_go = false;
+        break;
+      }
+    }
+    if (can_go) {
+      state_ = WALK;
+      return "forward";
+    }
+    /*
+    * 选择空间比较大的一边转动
+    */
+    state_ = ADJUST;
+    if (dir_distance_[DIR_CTL_LEFT] > dir_distance_[DIR_CTL_RIGHT]) {
+      return "left";
+    }
+    return "right";
+  }
+private:
+  std::string make_cmd(){}
+private:
+  enum STATE {
+    WALK = 1,
+    LOOKUP = 2,
+    ADJUST = 3,
+  };
+  double safe_distance_low_{0.4};
+  double safe_distance_high_{0.7};
+  Sonar sonar_;
+  /*
+  * determine if continue to go
+  */
+  std::vector<DIR_CTL_VALUE> walk_scan_;
+
+  /*determine direction for next*/
+  std::vector<DIR_CTL_VALUE> stop_scan_;
+
+  uint32_t scan_cursor_{0};
+  //save distance value
+  std::unordered_map<DIR_CTL_VALUE,double> dir_distance_;
+
+  SteeringGear steering_;
+
+  STATE state_{LOOKUP};
 };
 
 Commander *make_commander(std::string type) {
