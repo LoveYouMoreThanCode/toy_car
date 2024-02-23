@@ -27,9 +27,15 @@ int main() {
   std::unique_ptr<Commander, void (*)(Commander *)> tm_commander(
       make_commander("terminal"), destroy_commander);
 
+  uint64_t last_run_ns = lguTimestamp();
   while (true) {
-    // 保持一定的控制周期
-    lguSleep(0.1);
+    // 保持一定的控制周期,周期需要 >= 100ms
+    uint64_t now_ns = lguTimestamp();
+    if (now_ns - last_run_ns < 100UL*1000*100) {
+      lguSleep((100UL * 1000 * 100 + last_run_ns - now_ns) / 1000.0 / 1000.0 /
+               1000.0);
+    }
+    last_run_ns = lguTimestamp();
 
     // 命令输入提示
     std::cout << std::endl << std::endl;

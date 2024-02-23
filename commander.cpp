@@ -159,12 +159,13 @@ public:
   }
   ~SonarCommander() {}
   std::string scan_cmd() override {
-    double cur_distance = sonar_.get_distance();
+    double cur_distance; 
     switch(state_) {
       case ADJUST:
         state_ = LOOKUP;
         return "brake";
       case WALK:
+        cur_distance = sonar_.get_distance();
         if (cur_distance >= safe_distance_low_) {
           return "forward";
         }
@@ -172,11 +173,12 @@ public:
         lookup_cursor_ = 0;
         return "brake";
       case LOOKUP:
+        cur_distance = sonar_.get_distance();
         if (cur_distance > safe_distance_high_) {
           state_ = WALK;
-          return "brake";
+          return "forward";
         }
-        state_ = LOOKUP;
+        state_ = ADJUST;
         return lookup_algo_[lookup_cursor_++ % lookup_algo_.size()];
     }
   }
@@ -199,42 +201,37 @@ public:
   SteeringSonarCommander(uint32_t sonar_t, uint32_t sonar_r,
                          uint32_t steering_c)
       : sonar_(sonar_t, sonar_r), steering_(steering_c) {
-    walk_scan_ = {DIR_CTL_LEFT_FRONT, 
-                  DIR_CTL_FRONT, 
-                  DIR_CTL_RIGHT_FRONT,
-                  DIR_CTL_FRONT};
-    stop_scan_ = {DIR_CTL_LEFT,       
-                  DIR_CTL_LEFT_FRONT, 
-                  DIR_CTL_FRONT,
-                  DIR_CTL_RIGHT_FRONT, 
-                  DIR_CTL_RIGHT,      
-                  DIR_CTL_RIGHT_FRONT,
-                  DIR_CTL_FRONT,
-                  DIR_CTL_LEFT_FRONT};
   };
   ~SteeringSonarCommander() {}
   std::string scan_cmd() override{
-    scan_distance();
+    double min_distance;
     switch(state_) {
       case ADJUST:
         state_ = LOOKUP;
         return "brake";
       case WALK:
-        double min_distance = std::min(dir_distance_[DIR_CTL_LEFT_FRONT],
-                                       dir_distance_[DIR_CTL_FRONT]);
-        min_distance = std::min(dir_distance_[DIR_CTL_RIGHT_FRONT],min_distance);
+        state_ = CHECK;
+        return "brake";
+      case CHECK:
+        scan_distance_for_check();
+        min_distance = std::min(dir_distance_[DIR_CTL_LEFT_FRONT],
+                                dir_distance_[DIR_CTL_FRONT]);
+        min_distance =
+            std::min(dir_distance_[DIR_CTL_RIGHT_FRONT], min_distance);
         if (min_distance >= safe_distance_low_) {
+          state_ = WALK;
           return "forward";
         }
         state_ = LOOKUP;
         return "brake";
       case LOOKUP:
-        double min_distance = std::min(dir_distance_[DIR_CTL_LEFT_FRONT],
+        scan_distance_for_lookup();
+        min_distance = std::min(dir_distance_[DIR_CTL_LEFT_FRONT],
                                        dir_distance_[DIR_CTL_FRONT]);
         min_distance = std::min(dir_distance_[DIR_CTL_RIGHT_FRONT],min_distance);
         if (min_distance >= safe_distance_low_) {
           state_ = WALK;
-          return "brake";
+          return "forward";
         }
         state_ = ADJUST;
         if (dir_distance_[DIR_CTL_LEFT] > dir_distance_[DIR_CTL_RIGHT]) {
@@ -249,41 +246,95 @@ public:
     }
   }
 private:
-  void scan_distance(){
-    if (state_ == ADJUST) {
-      return;
+  void scan_distance_for_check(){
+    std::vector<DIR_CTL_VALUE> scan_seq;
+    //归位到左上或者右上，离哪边近就归位到哪边
+    if (steering_pos_ <= DIR_CTL_FRONT)  {
+      //归位到左边
+      if (steering_pos_ != DIR_CTL_LEFT_FRONT) {
+        steering_.move(DIR_CTL_LEFT_FRONT);
+        lguSleep(0.13 / 60 * 45);
+      }
+      scan_seq = {DIR_CTL_LEFT_FRONT,DIR_CTL_FRONT,DIR_CTL_RIGHT_FRONT};
+      steering_pos_ = DIR_CTL_LEFT_FRONT;
+    }else {
+      //归位到左边
+      if (steering_pos_ != DIR_CTL_RIGHT_FRONT) {
+        steering_.move(DIR_CTL_LEFT_FRONT);
+        lguSleep(0.13 / 60 * 45);
+      }
+      scan_seq = {DIR_CTL_RIGHT_FRONT,DIR_CTL_FRONT,DIR_CTL_LEFT_FRONT};
+      steering_pos_ = DIR_CTL_RIGHT_FRONT;
     }
-    auto *scan_road = state_ == LOOKUP ? &stop_scan_ : &walk_scan_;
-    uint32_t scan_cnt = state_ == LOOKUP ? 5 : 3;
-    for (uint32_t i = 0; i < scan_cnt; i++) {
-      auto steering_dir = (*scan_road)[scan_cursor_%(scan_road->size())];
-      steering_.move(steering_dir);
-      //空载速度: 0.13秒/60°  --> 130000 us/60°
-      //按照规划的路径扫描。首次可以不用移动，第2和第3次扫描行走扫描需要扫描45°,stop扫描需要90°
-      double need_wait_s = 0.13 / 60 * (state_ == LOOKUP ? 90 : 45);
-      lguSleep(need_wait_s);
-      dir_distance_[steering_dir] = sonar_.get_distance();
-      scan_cursor_ ++;
+    //依次扫描
+    for (uint i=0;i<scan_seq.size()) {
+        dir_distance_[scan_seq[i]] = sonar_.get_distance();
+        if (i + 1 < scan_req.size()) {
+          steering_.move(scan_seq[i + 1]);
+          lguSleep(0.13 / 60 * 45);
+          steering_pos_ = scan_seq[i + 1];
+        }
     }
+    //舵机的位置就停在这里不管了
+    //1. 尽可能缩短scan_distance_for_check时间，减少对小车运动的影响,减少等待舵机。
+    //2. 停在扫描终止位置，下一轮scan_distance_for_check可以少一次归位操作。
+    //3. scan_distance_for_lookup是遇到障碍的时刻，就假装多思考一会
+  }
+  void scan_distance_for_lookup() {
+    //0.13秒/60°
+    //归位到最左边或者最右边
+    std::vector<DIR_CTL_VALUE> scan_seq;
+    if (steering_pos_ <= DIR_CTL_FRONT)  {
+        //归位到最左边
+        if (steering_pos_ != DIR_CTL_LEFT) {
+          //可能处于DIR_CTL_FRONT或者DIR_CTL_LEFT_FRONT
+          steering_.move(DIR_CTL_LEFT);
+          double wait_s = 0.13 / 60 * (steering_pos_ == DIR_CTL_FRONT ? 90 : 45);
+          lguSleep(0.13/60)
+        }
+        steering_pos_ = DIR_CTL_LEFT;
+        scan_seq = {DIR_CTL_LEFT, DIR_CTL_LEFT_FRONT, DIR_CTL_FRONT,
+                    DIR_CTL_RIGHT_FRONT, DIR_CTL_RIGHT};
+    }else {
+        if (steering_pos_ != DIR_CTL_RIGHT) {
+          //只有可能处于 DIR_CTL_RIGHT_FRONT
+          steering_.move(DIR_CTL_RIGHT);
+          lguSleep(0.13 / 60 * 45);
+        }
+        steering_pos_ = DIR_CTL_RIGHT;
+        scan_seq = {DIR_CTL_RIGHT, DIR_CTL_RIGHT_FRONT, DIR_CTL_FRONT,
+                    DIR_CTL_LEFT_FRONT, DIR_CTL_LEFT};
+    }
+    //开始依次扫描
+    for (uint i=0;i<scan_seq.size()) {
+        dir_distance_[scan_seq[i]] = sonar_.get_distance();
+        if (i + 1 < scan_req.size()) {
+          steering_.move(scan_seq[i + 1]);
+          lguSleep(0.13 / 60 * 45);
+          steering_pos_ = scan_seq[i + 1];
+        }
+    }
+    //归位到对scan_distance_for_check有利的位置
+    assert(steering_pos_ == DIR_CTL_LEFT || steering_pos_ == DIR_CTL_RIGHT);
+    if (steering_pos_ == DIR_CTL_LEFT) {
+      steering_.move(DIR_CTL_LEFT_FRONT);
+    }else {
+      steering_.move(DIR_CTL_RIGHT_FRONT);
+    }
+    lguSleep(0.13 / 60 * 45);
   }
 private:
   enum STATE {
     WALK = 1,
     LOOKUP = 2,
     ADJUST = 3,
+    CHECK  = 4,
   };
   double safe_distance_low_{0.4};
   double safe_distance_high_{0.7};
   Sonar sonar_;
-  /*
-  * determine if continue to go
-  */
-  std::vector<DIR_CTL_VALUE> walk_scan_;
 
-  /*determine direction for next*/
-  std::vector<DIR_CTL_VALUE> stop_scan_;
-
-  uint32_t scan_cursor_{0};
+  DIR_CTL_VALUE steering_pos_{DIR_CTL_FRONT};
   //save distance value
   std::unordered_map<DIR_CTL_VALUE,double> dir_distance_;
 
