@@ -31,3 +31,4 @@ bash build-test.sh
 # supported features
 1. Use AT8236 to drive 4wd toy car. Support move forward, move backward, turn left, turn right, brake
 2. Support multiple command input. Such as linux terminal, bluetooth joystick, infrared detector
+3. Support auto-drive by sonar dectector
