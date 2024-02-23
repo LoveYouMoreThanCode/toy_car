@@ -190,7 +190,7 @@ private:
     ADJUST = 3,
   };
   Sonar sonar_;
-  STATE state_{LOOKUP};
+  STATE state_{ADJUST};
   double safe_distance_low_{0.5};
   double safe_distance_high_{0.8};
   uint32_t lookup_cursor_{0};
