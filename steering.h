@@ -13,10 +13,11 @@ public:
   SteeringGear(uint32_t gpio);
   ~SteeringGear();
 
-  void move(DIR_CTL_VALUE dir);
+  uint32_t move(DIR_CTL_VALUE dir);
+  DIR_CTL_VALUE get_pos() { return current_; }
 
 private:
-  DIR_CTL_VALUE current_{FULL};
+  DIR_CTL_VALUE current_{DIR_CTL_FULL};
   int32_t io_handle_;
   uint32_t control_;
 };

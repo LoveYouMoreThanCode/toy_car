@@ -249,79 +249,35 @@ private:
   void scan_distance_for_check(){
     std::vector<DIR_CTL_VALUE> scan_seq;
     //归位到左上或者右上，离哪边近就归位到哪边
-    if (steering_pos_ <= DIR_CTL_FRONT)  {
-      //归位到左边
-      if (steering_pos_ != DIR_CTL_LEFT_FRONT) {
-        steering_.move(DIR_CTL_LEFT_FRONT);
-        lguSleep(0.13 / 60 * 45);
-      }
+    if (steering_.get_pos() <= DIR_CTL_FRONT) {
       scan_seq = {DIR_CTL_LEFT_FRONT,DIR_CTL_FRONT,DIR_CTL_RIGHT_FRONT};
-      steering_pos_ = DIR_CTL_LEFT_FRONT;
-    }else {
-      //归位到左边
-      if (steering_pos_ != DIR_CTL_RIGHT_FRONT) {
-        steering_.move(DIR_CTL_LEFT_FRONT);
-        lguSleep(0.13 / 60 * 45);
-      }
+    } else {
       scan_seq = {DIR_CTL_RIGHT_FRONT,DIR_CTL_FRONT,DIR_CTL_LEFT_FRONT};
-      steering_pos_ = DIR_CTL_RIGHT_FRONT;
     }
-    //依次扫描
+    //依次扫描,大部分时间200ms可以完成
     for (uint i=0;i<scan_seq.size()) {
+        auto degree = steering_.move(scan_seq[i]);
+        lguSleep(0.13 / 60 * degree);
         dir_distance_[scan_seq[i]] = sonar_.get_distance();
-        if (i + 1 < scan_req.size()) {
-          steering_.move(scan_seq[i + 1]);
-          lguSleep(0.13 / 60 * 45);
-          steering_pos_ = scan_seq[i + 1];
-        }
     }
-    //舵机的位置就停在这里不管了
-    //1. 尽可能缩短scan_distance_for_check时间，减少对小车运动的影响,减少等待舵机。
-    //2. 停在扫描终止位置，下一轮scan_distance_for_check可以少一次归位操作。
-    //3. scan_distance_for_lookup是遇到障碍的时刻，就假装多思考一会
   }
   void scan_distance_for_lookup() {
     //0.13秒/60°
     //归位到最左边或者最右边
     std::vector<DIR_CTL_VALUE> scan_seq;
-    if (steering_pos_ <= DIR_CTL_FRONT)  {
-        //归位到最左边
-        if (steering_pos_ != DIR_CTL_LEFT) {
-          //可能处于DIR_CTL_FRONT或者DIR_CTL_LEFT_FRONT
-          steering_.move(DIR_CTL_LEFT);
-          double wait_s = 0.13 / 60 * (steering_pos_ == DIR_CTL_FRONT ? 90 : 45);
-          lguSleep(0.13/60)
-        }
-        steering_pos_ = DIR_CTL_LEFT;
-        scan_seq = {DIR_CTL_LEFT, DIR_CTL_LEFT_FRONT, DIR_CTL_FRONT,
-                    DIR_CTL_RIGHT_FRONT, DIR_CTL_RIGHT};
-    }else {
-        if (steering_pos_ != DIR_CTL_RIGHT) {
-          //只有可能处于 DIR_CTL_RIGHT_FRONT
-          steering_.move(DIR_CTL_RIGHT);
-          lguSleep(0.13 / 60 * 45);
-        }
-        steering_pos_ = DIR_CTL_RIGHT;
-        scan_seq = {DIR_CTL_RIGHT, DIR_CTL_RIGHT_FRONT, DIR_CTL_FRONT,
-                    DIR_CTL_LEFT_FRONT, DIR_CTL_LEFT};
+    if (steering_.get_pos() <= DIR_CTL_FRONT) {
+      scan_seq = {DIR_CTL_LEFT, DIR_CTL_LEFT_FRONT, DIR_CTL_FRONT,
+                  DIR_CTL_RIGHT_FRONT, DIR_CTL_RIGHT};
+    } else {
+      scan_seq = {DIR_CTL_RIGHT, DIR_CTL_RIGHT_FRONT, DIR_CTL_FRONT,
+                  DIR_CTL_LEFT_FRONT, DIR_CTL_LEFT};
     }
     //开始依次扫描
-    for (uint i=0;i<scan_seq.size()) {
-        dir_distance_[scan_seq[i]] = sonar_.get_distance();
-        if (i + 1 < scan_req.size()) {
-          steering_.move(scan_seq[i + 1]);
-          lguSleep(0.13 / 60 * 45);
-          steering_pos_ = scan_seq[i + 1];
-        }
+    for (uint i = 0; i < scan_seq.size()) {
+      auto degree = steering_.move(scan_seq[i]);
+      lguSleep(0.13 / 60 * degree);
+      dir_distance_[scan_seq[i]] = sonar_.get_distance();
     }
-    //归位到对scan_distance_for_check有利的位置
-    assert(steering_pos_ == DIR_CTL_LEFT || steering_pos_ == DIR_CTL_RIGHT);
-    if (steering_pos_ == DIR_CTL_LEFT) {
-      steering_.move(DIR_CTL_LEFT_FRONT);
-    }else {
-      steering_.move(DIR_CTL_RIGHT_FRONT);
-    }
-    lguSleep(0.13 / 60 * 45);
   }
 private:
   enum STATE {
@@ -334,7 +290,6 @@ private:
   double safe_distance_high_{0.7};
   Sonar sonar_;
 
-  DIR_CTL_VALUE steering_pos_{DIR_CTL_FRONT};
   //save distance value
   std::unordered_map<DIR_CTL_VALUE,double> dir_distance_;
 
