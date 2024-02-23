@@ -159,26 +159,25 @@ public:
   }
   ~SonarCommander() {}
   std::string scan_cmd() override {
-    if (state_ == ADJUST) {
-      state_ = LOOKUP;
-      return "brake";
-    }
     double cur_distance = sonar_.get_distance();
-    if (state_ == WALK) {
-      if (cur_distance < safe_distance_low_) {
+    switch(state_) {
+      case ADJUST:
+        state_ = LOOKUP;
+        return "brake";
+      case WALK:
+        if (cur_distance >= safe_distance_low_) {
+          return "forward";
+        }
         state_ = LOOKUP;
         lookup_cursor_ = 0;
         return "brake";
-      }else {
-        return "forward";
-      }
-    }else {
-      if (cur_distance > safe_distance_high_) {
-        state_ = WALK;
-        return "forward";
-      }
-      state_ = ADJUST;
-      return lookup_algo_[lookup_cursor_++ % lookup_algo_.size()];
+      case LOOKUP:
+        if (cur_distance > safe_distance_high_) {
+          state_ = WALK;
+          return "brake";
+        }
+        state_ = LOOKUP;
+        return lookup_algo_[lookup_cursor_++ % lookup_algo_.size()];
     }
   }
 
@@ -215,9 +214,44 @@ public:
   };
   ~SteeringSonarCommander() {}
   std::string scan_cmd() override{
+    scan_distance();
+    switch(state_) {
+      case ADJUST:
+        state_ = LOOKUP;
+        return "brake";
+      case WALK:
+        double min_distance = std::min(dir_distance_[DIR_CTL_LEFT_FRONT],
+                                       dir_distance_[DIR_CTL_FRONT]);
+        min_distance = std::min(dir_distance_[DIR_CTL_RIGHT_FRONT],min_distance);
+        if (min_distance >= safe_distance_low_) {
+          return "forward";
+        }
+        state_ = LOOKUP;
+        return "brake";
+      case LOOKUP:
+        double min_distance = std::min(dir_distance_[DIR_CTL_LEFT_FRONT],
+                                       dir_distance_[DIR_CTL_FRONT]);
+        min_distance = std::min(dir_distance_[DIR_CTL_RIGHT_FRONT],min_distance);
+        if (min_distance >= safe_distance_low_) {
+          state_ = WALK;
+          return "brake";
+        }
+        state_ = ADJUST;
+        if (dir_distance_[DIR_CTL_LEFT] > dir_distance_[DIR_CTL_RIGHT]) {
+          return "left";
+        }
+        return "right";
+
+    }
     if (state_ == ADJUST) {
       state_ = LOOKUP;
       return "brake";
+    }
+  }
+private:
+  void scan_distance(){
+    if (state_ == ADJUST) {
+      return;
     }
     auto *scan_road = state_ == LOOKUP ? &stop_scan_ : &walk_scan_;
     uint32_t scan_cnt = state_ == LOOKUP ? 5 : 3;
@@ -231,48 +265,7 @@ public:
       dir_distance_[steering_dir] = sonar_.get_distance();
       scan_cursor_ ++;
     }
-
-    if (state_ == WALK) {
-      bool keep_move = true;
-      std::vector<DIR_CTL_VALUE> care_dirs = {DIR_CTL_LEFT_FRONT, DIR_CTL_FRONT,
-                                              DIR_CTL_RIGHT_FRONT};
-      for (auto &dir : care_dirs) {
-        if (dir_distance_[dir] < safe_distance_low_) {
-          keep_move = false;
-          break;
-        }
-      }
-      if (keep_move) {
-        return "forward";
-      }
-      state_ = LOOKUP;
-      return "brake";
-    }
-    /*state == LOOKUP*/
-    bool can_go = true;
-    std::vector<DIR_CTL_VALUE> care_dirs = {DIR_CTL_LEFT_FRONT, DIR_CTL_FRONT,
-                                              DIR_CTL_RIGHT_FRONT};
-    for (auto &di :care_dirs) {
-      if (dir_distance_[dir] < safe_distance_high_) {
-        can_go = false;
-        break;
-      }
-    }
-    if (can_go) {
-      state_ = WALK;
-      return "forward";
-    }
-    /*
-    * 选择空间比较大的一边转动
-    */
-    state_ = ADJUST;
-    if (dir_distance_[DIR_CTL_LEFT] > dir_distance_[DIR_CTL_RIGHT]) {
-      return "left";
-    }
-    return "right";
   }
-private:
-  std::string make_cmd(){}
 private:
   enum STATE {
     WALK = 1,
