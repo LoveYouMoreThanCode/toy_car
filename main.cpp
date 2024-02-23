@@ -45,7 +45,7 @@ int main() {
     std::string cmd = js_commander->scan_cmd();
     if (cmd == "auto_sonar") {
       cmd = sn_commander->scan_cmd();
-      my_car.set_engine(20, 20, 70);
+      my_car.set_engine(20, 20, 30);
       std::cout << "using sonar cmd:" << cmd << std::endl;
     }else if (cmd == "fallback_terminal") {
       cmd = tm_commander->scan_cmd();
